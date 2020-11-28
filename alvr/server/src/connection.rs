@@ -35,14 +35,6 @@ fn unit_quat_to_tracking_quat(quat: &UnitQuaternion<f32>) -> TrackingQuat {
     }
 }
 
-// This function never returns, but its future can be canceled
-// todo: find a built-in equivalent future in tokio or futures crates
-async fn never_return() -> ! {
-    loop {
-        time::delay_for(Duration::from_secs(10)).await;
-    }
-}
-
 async fn setup_streams(
     settings: Settings,
     client_identity: PublicIdentity,
@@ -429,7 +421,7 @@ async fn connect_to_any_client(
 
             restart_steamvr();
 
-            never_return().await;
+            std::future::pending::<()>().await;
         }
 
         let identity = clients_info.get(&control_socket.peer_ip()).unwrap().clone();
@@ -491,7 +483,7 @@ pub async fn connection_loop(
         let get_control_socket: BoxFuture<_> = if !clients_info.is_empty() {
             Box::pin(connect_to_any_client(clients_info, session_manager.clone()))
         } else {
-            Box::pin(async { never_return().await })
+            Box::pin(std::future::pending())
         };
 
         let mut control_socket = tokio::select! {
